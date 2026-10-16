@@ -1,0 +1,258 @@
+; Guion de pruebas del simulador del ESP32.
+; Teclas: 0-9 # | U=arriba D=abajo K=OK A=atras X=borrar L=llamar(verde) C=colgar(rojo) M=mayus
+; "uno <linea>" = linea que manda el Arduino (el simulador agrega el checksum)
+
+titulo Arranque: el ESP32 pide el estado al Arduino
+esperar 300
+espera_orden ESTADO
+uno LISTO
+uno SENAL,3
+captura 01_menu
+
+titulo Menu: arriba = derecha, abajo = izquierda (circular)
+teclas U
+captura 02_menu_llamada
+teclas U
+captura 03_menu_mensaje
+teclas U
+captura 04_menu_bandeja
+teclas U
+captura 05_menu_vuelve_a_llamada
+teclas D
+captura 06_menu_abajo_va_a_bandeja
+teclas DD
+
+titulo Llamadas: numero local de 8 digitos, X conserva el numero
+teclas K
+captura 10_llamadas_vacio
+teclas 7123456
+captura 11_llamadas_7_digitos
+teclas 8
+captura 12_llamadas_8_digitos
+teclas U
+captura 13_llamadas_x
+teclas D
+captura 14_llamadas_vuelve_numero_intacto
+teclas 99999
+captura 15_llamadas_numero_largo_muestra_final
+teclas XXXXX
+teclas L
+espera_orden LLAMAR,+50371234568
+captura 16_llamando
+uno LLAMANDO
+esperar 3000
+captura 17_llamando_tiempo_en_cero
+teclas D
+captura 18_llamando_colgar_sel
+teclas U
+captura 19_llamando_sin_sel
+uno EN_CURSO
+esperar 65200
+captura 20_en_curso_01_05
+teclas D
+captura 21_en_curso_colgar_sel
+teclas K
+espera_orden COLGAR
+captura 22_colgando
+uno FIN
+captura 23_finalizada
+esperar 1600
+captura 24_vuelve_menu
+
+titulo Llamada larga: mas de 99:59 muestra "+"
+teclas UK
+teclas 22223333L
+espera_orden LLAMAR,+50322223333
+uno EN_CURSO
+saltar 5999000
+esperar 1200
+captura 25_en_curso_mas_de_99_min
+teclas C
+espera_orden COLGAR
+uno FIN
+esperar 1700
+
+titulo Numero internacional con + (dos clics en #)
+teclas UK
+teclas ##
+esperar 1000
+teclas 15551234567
+captura 26_internacional
+teclas L
+espera_orden LLAMAR,+15551234567
+uno FIN
+esperar 1700
+
+titulo Llamada entrante: arriba = cheque, abajo alterna, OK contesta
+teclas U
+uno ENTRANTE,+50378889999
+captura 30_entrante
+teclas U
+captura 31_entrante_cheque
+teclas D
+captura 32_entrante_x
+teclas D
+captura 33_entrante_cheque_otra_vez
+teclas K
+espera_orden CONTESTAR
+captura 34_entrante_espera_conexion
+uno EN_CURSO
+esperar 12100
+captura 35_entrante_en_curso_00_12
+teclas C
+espera_orden COLGAR
+uno FIN
+esperar 1700
+captura 36_vuelve_al_menu_previo
+
+titulo Llamada entrante rechazada con boton rojo mientras se escribe un numero
+teclas UK
+teclas 7777
+uno ENTRANTE,+50312345678901234567
+captura 37_entrante_numero_largo_inicio
+teclas C
+espera_orden RECHAZAR
+uno FIN
+captura 38_vuelve_a_llamadas_con_numero
+teclas UK
+
+titulo Mandar mensaje: numero, flechas y OK
+teclas UUK
+captura 40_mandar_vacio
+teclas 76543210
+captura 41_mandar_numero
+teclas D
+captura 42_mandar_regresar_sel
+teclas U
+captura 43_mandar_vuelve_numero
+teclas U
+captura 44_mandar_seguir_sel
+teclas U
+teclas K
+captura 45_mandar_ok_lleva_a_flecha
+teclas K
+captura 46_mensaje_vacio
+
+titulo Escribir: 1x = numero, 2x = a, OK confirma, espera confirma
+teclas 11
+captura 47_mensaje_a_pendiente
+teclas K
+teclas 11
+esperar 1000
+captura 48_mensaje_aa
+teclas M
+teclas 44
+esperar 1000
+teclas 444
+esperar 1000
+teclas 4444
+esperar 1000
+teclas M
+teclas 5555
+esperar 1000
+teclas 00
+esperar 1000
+teclas 222
+esperar 1000
+captura 49_mensaje_mayus_y_espacio
+teclas 123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789
+captura 50_mensaje_largo_salto_visual
+teclas XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+captura 51_mensaje_borrado_vuelve_linea
+teclas KK
+captura 52_mensaje_ok_doble_no_envia
+sin_ordenes
+teclas U
+captura 53_mensaje_enviar_sel
+teclas D
+captura 54_mensaje_cancelar_sel
+teclas D
+teclas K
+espera_orden SMS,+50376543210,aaJKLñ e1234
+captura 55_mensaje_enviando
+uno SMS_OK
+captura 56_mensaje_enviado
+esperar 1600
+captura 57_vuelve_menu
+
+titulo Bandeja vacia
+teclas UUUK
+captura 60_bandeja_vacia
+teclas AA
+
+titulo Llegan SMS (el 1 es el mas reciente)
+uno SMS,+50370001111,26/10/16 08:15:30,Hola, este es el primer mensaje de prueba.
+uno SMS,+50370002222,26/10/16 09:20:00,Segundo mensaje con ñ y acentos: canción.
+captura 61_menu_tras_sms
+teclas DK
+captura 62_bandeja_2_mensajes
+teclas D
+captura 63_bandeja_msg1_sel
+teclas D
+captura 64_bandeja_msg2_sel
+teclas D
+captura 65_bandeja_regresar_sel
+teclas U
+captura 66_bandeja_vuelve_al_ultimo
+uno SMS,+50370003333,26/10/16 10:00:00,Tercero
+uno SMS,+50370004444,26/10/16 11:00:00,Cuarto mensaje: este texto es bastante largo para que haya que desplazarse con la flecha hacia abajo manteniendola presionada y asi ver la hora al final.
+captura 67_bandeja_4_mensajes_flechas
+teclas UU
+captura 68_bandeja_msg2_ambas_flechas
+teclas U
+captura 69_bandeja_msg1_arriba
+teclas U
+captura 70_bandeja_regresar_desde_arriba
+teclas D
+captura 70b_bandeja_msg1_desde_regresar
+
+titulo Leer mensaje largo: mantener abajo desplaza, un clic va a regresar
+teclas K
+captura 71_leer_msg1
+mantener D 1500
+captura 72_leer_desplazado
+mantener U 3000
+captura 73_leer_arriba
+teclas D
+captura 74_leer_regresar_sel
+teclas U
+captura 75_leer_vuelve_texto
+teclas A
+captura 76_leer_atras_marca_regresar
+teclas A
+captura 77_bandeja_tras_atras
+
+titulo Borrar: primera vez no pasa nada, segunda elimina
+teclas DK
+captura 78_leer_msg2
+teclas X
+captura 79_leer_tras_un_borrar
+teclas X
+captura 80_bandeja_tras_borrar
+sin_ordenes
+
+titulo SMS 24 horas despues se borran
+saltar 86400000
+esperar 61000
+captura 81_bandeja_tras_24h
+
+titulo Senal 0..5
+teclas AA
+uno SENAL,0
+captura 90_senal_0
+uno SENAL,5
+captura 91_senal_5
+
+titulo Reintento si el Arduino no confirma, y linea con checksum malo ignorada
+ack no
+uno_crudo SENAL,1*00
+captura 92_senal_sigue_5
+teclas UK
+teclas 70000000L
+esperar 1000
+ack si
+esperar 600
+espera_orden LLAMAR,+50370000000
+uno FIN
+esperar 1700
+captura 93_fin

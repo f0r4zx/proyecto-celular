@@ -1,0 +1,133 @@
+; Guion de pruebas del simulador del Arduino Uno (SIM900 falsa + ESP32 falso)
+titulo Arranque: configuracion de la SIM900 y aviso LISTO
+esperar 3000
+espera_at AT+CSCS="GSM"
+espera_evento LISTO
+espera_evento SENAL,3
+
+titulo El ESP32 pide el estado (por ejemplo tras reiniciarse)
+orden ESTADO
+espera_evento SENAL,3
+
+titulo Llamada saliente: LLAMANDO, contestan (MO CONNECTED) -> EN_CURSO, cuelga el otro -> FIN
+orden LLAMAR,+50371234567
+espera_at ATD+50371234567;
+espera_evento LLAMANDO
+suena_remoto
+esperar 2500
+sin_evento EN_CURSO
+contesta_remoto
+esperar 200
+espera_evento EN_CURSO
+esperar 1000
+espera_at AT+CLVL=80
+esperar 5000
+cuelga_remoto
+espera_evento FIN
+
+titulo Llamada saliente sin aviso MO CONNECTED: AT+CLCC detecta la conexion
+orden LLAMAR,+50322223333
+esperar 1500
+conecta_sin_aviso
+esperar 1500
+espera_evento EN_CURSO
+orden COLGAR
+espera_at ATH
+espera_evento FIN
+
+titulo Llamada entrante contestada desde el ESP32
+esperar 2000
+ring +50378889999
+esperar 200
+espera_evento ENTRANTE,+50378889999
+orden CONTESTAR
+espera_at ATA
+espera_evento EN_CURSO
+esperar 3000
+cuelga_remoto
+espera_evento FIN
+
+titulo Llamada entrante rechazada
+esperar 2000
+ring +50312345678
+esperar 200
+espera_evento ENTRANTE,+50312345678
+orden RECHAZAR
+espera_at ATH
+espera_evento FIN
+
+titulo Llamada perdida (el otro corta antes de contestar)
+esperar 2000
+ring +50311112222
+esperar 200
+espera_evento ENTRANTE
+deja_de_sonar
+esperar 4000
+espera_evento FIN
+
+titulo Enviar SMS con enie (se convierte al alfabeto GSM)
+orden SMS,+50376543210,Hola ñoño, mañana a las 8
+espera_at AT+CMGS="+50376543210"
+esperar 500
+sms_enviado Hola }o}o, ma}ana a las 8
+espera_evento SMS_OK
+
+titulo Orden repetida (se perdio el ACK): no se envia dos veces
+orden_repetida SMS,+50376543210,Hola ñoño, mañana a las 8
+cuenta_at AT+CMGS 0
+espera_evento ACK
+
+titulo SMS recibido en alfabeto GSM (} = enie)
+sms_llega 3 +50370001111 0 Hola, que tal? Ma}ana nos vemos.
+esperar 500
+espera_evento SMS,+50370001111,26/10/16 14:05:09,Hola, que tal? Mañana nos vemos.
+espera_at AT+CMGD=3
+
+titulo SMS recibido en UCS2 (acentos de un smartphone)
+sms_llega 4 +50370002222 8 @HEX1@
+esperar 500
+espera_evento SMS,+50370002222,26/10/16 14:05:09,Canción ?
+
+titulo SMS UCS2 largo (70 caracteres = 280 cifras hex, mas que el buffer de linea)
+sms_llega 5 +50370003333 8 @HEX2@
+esperar 500
+espera_evento @LARGO@
+
+titulo Dos SMS seguidos
+sms_llega 6 +50370004444 0 Primero
+sms_llega 7 +50370005555 0 Segundo
+esperar 800
+espera_evento SMS,+50370005555,26/10/16 14:05:09,Segundo
+
+titulo Senal: solo se avisa cuando cambia el nivel
+csq 31
+esperar 6000
+espera_evento SENAL,5
+esperar 6000
+sin_evento SENAL
+csq 99
+esperar 6000
+espera_evento SENAL,0
+csq 7
+esperar 6000
+espera_evento SENAL,1
+
+titulo Sin registro en la red (sin cobertura 2G): 0 barras aunque CSQ tenga valor
+registro 2
+esperar 6000
+espera_evento SENAL,0
+registro 1
+esperar 6000
+espera_evento SENAL,1
+
+titulo La SIM900 se apaga: se reconfigura, pulsa D9 y lee SMS que llegaron mientras tanto
+apagado_urc
+espera_evento SENAL,0
+orden LLAMAR,+50371234567
+espera_evento FIN
+esperar 6000
+encender
+sms_en_sim 9 +50370009999 0 Llego con el modulo apagado
+esperar 12000
+espera_evento LISTO
+espera_evento SMS,+50370009999,26/10/16 14:05:09,Llego con el modulo apagado
