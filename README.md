@@ -48,6 +48,10 @@ docs/
 
 ## 1. Conexiones
 
+![Diagrama de conexiones](docs/diagrama_conexiones.png)
+
+Diagrama completo (también en SVG: [`docs/diagrama_conexiones.svg`](docs/diagrama_conexiones.svg); se regenera con `python3 herramientas/generar_diagrama.py`).
+
 ### Teclado (conector J1 de la PCB) → ESP32
 
 Las **filas** son entradas y ya tienen pull-up de 10 kΩ en la PCB (R1–R4), así que **en reposo leen ALTO** y leen BAJO cuando se presiona una tecla de la columna activa. Las **columnas** son salidas de barrido: solo una a la vez en BAJO y las demás en alta impedancia (nunca en ALTO, así dos teclas a la vez no hacen corto).
